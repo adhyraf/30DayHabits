@@ -2,37 +2,47 @@
 
 use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
+use App\Models\Progress;
+use App\Http\Controllers\ProgressController;
 
-// Load array jadwal harian riil dari file eksternal
+// ✅ Include jadwal harian (pastikan ini ada sebelum route)
 $jadwalHarian = require base_path('routes/jadwal_harian_rill.php');
 
-// Route untuk halaman dashboard utama
+// ✅ Halaman dashboard utama
 Route::get('/', function () {
     return view('dashboard');
 });
 
-// Route untuk setiap halaman per hari
+// ✅ Halaman hari ke-n
 Route::get('/day/{day}', function ($day) use ($jadwalHarian) {
-    // Tanggal mulai tantangan: 14 Juli 2025 (hari Senin)
+    // Tanggal mulai challenge
     $tanggalMulai = Carbon::create(2025, 7, 14);
 
-    // Hitung tanggal berdasarkan hari ke-n
+    // Hitung tanggal ke-n
     $tanggalIni = $tanggalMulai->copy()->addDays($day - 1);
-    $hariNama = strtolower($tanggalIni->format('l')); // e.g., "monday", "saturday"
+    $hariNama = strtolower($tanggalIni->format('l')); // ex: monday, tuesday
 
-    // Tentukan jenis hari dan ambil jadwalnya
+    // Tentukan tipe hari
     $tipeHari = match ($hariNama) {
         'saturday' => 'sabtu',
         'sunday' => 'minggu',
         default => 'senin_jumat',
     };
 
+    // Ambil jadwal dari file
     $jadwal = $jadwalHarian[$tipeHari] ?? [];
 
-    // Kirim data ke view
+    // ✅ Ambil progress dari database (jika ada)
+    $progress = Progress::where('day', $day)->first();
+
+    // Tampilkan view
     return view('day', [
         'day' => $day,
         'tanggal' => $tanggalIni->format('d M Y'),
         'jadwal' => $jadwal,
+        'progress' => $progress, // dikirim ke view
     ]);
 });
+
+// ✅ Route untuk menyimpan/update progress (AJAX POST)
+Route::post('/progress', [ProgressController::class, 'storeOrUpdate']);

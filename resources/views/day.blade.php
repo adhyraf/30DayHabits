@@ -3,135 +3,172 @@
 @section('title', 'Hari ' . $day . ' - 30 Day Habits')
 
 @section('content')
-    <!-- Header + Toggle -->
-    <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-        <a href="{{ url('/') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">&larr; Kembali ke Dashboard</a>
-        <button id="toggle-theme" class="text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            🌙 Dark Mode
+<div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+    <a href="{{ url('/') }}" class="text-sm text-neutral-300 hover:underline">&larr; Kembali</a>
+    <button id="toggle-theme" class="text-sm bg-neutral-800 text-white px-4 py-2 rounded-lg shadow hover:bg-neutral-700 transition">
+        🌙 Dark Mode
+    </button>
+</div>
+
+<h1 class="text-2xl font-bold text-white mb-1">Hari {{ $day }}</h1>
+<p class="text-sm text-gray-400 mb-6">{{ $tanggal }}</p>
+
+<div class="space-y-8">
+    <!-- Fokus Harian -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-2">📌 Fokus Hari Ini</h2>
+        <p class="text-gray-300">Fokus utama hari ini harus dilakukan dengan konsisten dan semangat.</p>
+    </div>
+
+    <!-- Refleksi -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-2">✍️ Refleksi Ringan</h2>
+        <textarea id="refleksi" rows="5" placeholder="Apa yang kamu pelajari atau rasakan hari ini?"
+            class="w-full bg-neutral-900 text-white border border-neutral-700 rounded-lg p-3 focus:ring focus:ring-blue-600 text-sm">{{ $progress->refleksi ?? '' }}</textarea>
+    </div>
+
+    <!-- Tandai Selesai -->
+    <div class="flex items-center gap-3">
+        <input type="checkbox" id="selesai" {{ $progress && $progress->selesai ? 'checked' : '' }}
+            class="w-5 h-5 text-blue-500 bg-neutral-800 border-neutral-600 rounded focus:ring-blue-500" />
+        <label for="selesai" class="text-white">Tandai hari ini sebagai selesai</label>
+    </div>
+
+    <!-- Jadwal Harian -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-3">📅 Jadwal Harian</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach ($jadwal as $index => [$waktu, $kegiatan])
+                @php
+                    $checked = $progress && is_array($progress->jadwal) && ($progress->jadwal["jadwal_$index"] ?? false);
+                @endphp
+                <label for="jadwal_{{ $index }}" class="bg-neutral-800 border border-neutral-700 rounded-xl p-4 flex gap-3 items-start shadow transition hover:border-blue-500">
+                    <input type="checkbox" id="jadwal_{{ $index }}" {{ $checked ? 'checked' : '' }}
+                        class="mt-1 w-5 h-5 text-blue-500 bg-neutral-700 border-none rounded focus:ring-2 focus:ring-blue-400" />
+                    <div>
+                        <div class="text-sm text-gray-400 mb-1">{{ $waktu }}</div>
+                        <div class="text-white font-medium leading-snug">{{ $kegiatan }}</div>
+                    </div>
+                </label>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Mapel Hari Ini -->
+    @php
+        $mapelHariIni = include base_path('routes/jadwal_harian.php');
+        $mapel = $mapelHariIni[$day] ?? [];
+    @endphp
+
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-3">📚 Mapel Hari Ini</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach ($mapel as $i => $item)
+                @php
+                    $checked = $progress && is_array($progress->mapel) && ($progress->mapel["mapel_$i"] ?? false);
+                @endphp
+                <label for="mapel_{{ $i }}" class="bg-blue-950 border border-blue-700 rounded-xl p-4 flex gap-3 items-center shadow hover:border-blue-400">
+                    <input type="checkbox" id="mapel_{{ $i }}" {{ $checked ? 'checked' : '' }}
+                        class="w-5 h-5 text-blue-500 bg-blue-900 border-none rounded focus:ring-2 focus:ring-blue-400" />
+                    <span class="text-white font-medium">{{ $item }}</span>
+                </label>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Tombol Simpan Manual -->
+    <div>
+        <button id="save-progress" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
+            💾 Simpan Progress
         </button>
     </div>
-
-    <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-blue-700 dark:text-blue-300 text-center">
-        Hari {{ $day }}
-        <span class="block text-base text-gray-500 dark:text-gray-400 mt-1">{{ $tanggal }}</span>
-    </h1>
-
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6 space-y-6 sm:space-y-8">
-        <!-- Fokus Harian -->
-        <div>
-            <h2 class="text-lg sm:text-xl font-semibold mb-2">📌 Fokus Hari Ini</h2>
-            <p class="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
-                Lakukan kegiatan utama yang sudah direncanakan hari ini. Tetap konsisten dan semangat!
-            </p>
-        </div>
-
-        <!-- Refleksi -->
-        <div>
-            <h2 class="text-lg sm:text-xl font-semibold mb-2">✍️ Refleksi Ringan</h2>
-            <textarea id="refleksi" rows="5" placeholder="Apa yang kamu pelajari atau rasakan hari ini?"
-                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"></textarea>
-        </div>
-
-        <!-- Checklist Hari -->
-        <div class="flex items-center gap-3">
-            <input type="checkbox" id="selesai" class="w-5 h-5 text-blue-600 focus:ring-blue-500">
-            <label for="selesai" class="text-gray-800 dark:text-gray-200 font-medium">Tandai hari ini sebagai selesai</label>
-        </div>
-
-        <!-- Jadwal Harian -->
-        <div>
-            <h2 class="text-lg sm:text-xl font-semibold mb-3">📅 Jadwal Harian</h2>
-            <div class="space-y-3">
-                @foreach ($jadwal as $index => [$waktu, $kegiatan])
-                    <div class="flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm">
-                        <input type="checkbox" id="jadwal_{{ $index }}" class="mt-1 w-5 h-5 text-blue-600" />
-                        <div>
-                            <div class="flex items-center gap-2 mb-1 text-sm text-gray-600 dark:text-gray-300">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
-                                     viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {{ $waktu }}
-                            </div>
-                            <label for="jadwal_{{ $index }}" class="text-gray-800 dark:text-gray-100 font-medium leading-snug">
-                                {{ $kegiatan }}
-                            </label>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <!-- Mapel Hari Ini -->
-        @php
-            $mapelHariIni = include base_path('routes/jadwal_harian.php');
-            $mapel = $mapelHariIni[$day] ?? [];
-        @endphp
-
-        <div>
-            <h2 class="text-lg sm:text-xl font-semibold mb-3">📚 Mapel Hari Ini</h2>
-            <div class="space-y-2">
-                @foreach ($mapel as $i => $item)
-                    <div class="flex items-center gap-3 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-3 shadow-sm">
-                        <input type="checkbox" id="mapel_{{ $i }}" class="w-5 h-5 text-blue-600" />
-                        <label for="mapel_{{ $i }}" class="text-gray-800 dark:text-white font-medium">{{ $item }}</label>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
+</div>
 @endsection
 
 @section('scripts')
 <script>
-    const day = {{ $day }};
-    const checkbox = document.getElementById('selesai');
-    const refleksi = document.getElementById('refleksi');
-    const refleksiKey = 'refleksi_' + day;
-    const statusKey = 'day_' + day;
+const day = {{ $day }};
+const refleksi = document.getElementById('refleksi');
+const checkbox = document.getElementById('selesai');
+const jadwalCheckboxes = document.querySelectorAll('[id^="jadwal_"]');
+const mapelCheckboxes = document.querySelectorAll('[id^="mapel_"]');
 
-    checkbox.checked = localStorage.getItem(statusKey) === 'true';
-    refleksi.value = localStorage.getItem(refleksiKey) || '';
+// Restore dari localStorage (opsional tambahan jika belum ada di DB)
+refleksi.value = localStorage.getItem('refleksi_' + day) || refleksi.value;
+checkbox.checked = localStorage.getItem('day_' + day) === 'true' || checkbox.checked;
 
-    checkbox.addEventListener('change', () => {
-        localStorage.setItem(statusKey, checkbox.checked);
+jadwalCheckboxes.forEach((cb) => {
+    const key = 'jadwal_' + day + '_' + cb.id.split('_')[1];
+    cb.checked = localStorage.getItem(key) === 'true' || cb.checked;
+});
+
+mapelCheckboxes.forEach((cb) => {
+    const key = 'mapel_' + day + '_' + cb.id.split('_')[1];
+    cb.checked = localStorage.getItem(key) === 'true' || cb.checked;
+});
+
+// Fungsi simpan ke database
+function simpanProgress() {
+    const refleksiVal = refleksi.value;
+    const selesaiVal = checkbox.checked;
+
+    const jadwal = {};
+    jadwalCheckboxes.forEach(cb => {
+        jadwal[cb.id] = cb.checked;
+        localStorage.setItem('jadwal_' + day + '_' + cb.id.split('_')[1], cb.checked);
     });
 
-    refleksi.addEventListener('input', () => {
-        localStorage.setItem(refleksiKey, refleksi.value);
+    const mapel = {};
+    mapelCheckboxes.forEach(cb => {
+        mapel[cb.id] = cb.checked;
+        localStorage.setItem('mapel_' + day + '_' + cb.id.split('_')[1], cb.checked);
     });
 
-    // Jadwal harian checkbox
-    document.querySelectorAll('[id^="jadwal_"]').forEach((input) => {
-        const key = 'jadwal_' + day + '_' + input.id.split('_')[1];
-        input.checked = localStorage.getItem(key) === 'true';
-        input.addEventListener('change', () => {
-            localStorage.setItem(key, input.checked);
-        });
-    });
+    localStorage.setItem('refleksi_' + day, refleksiVal);
+    localStorage.setItem('day_' + day, selesaiVal);
 
-    // Mapel hari ini checkbox
-    document.querySelectorAll('[id^="mapel_"]').forEach((input) => {
-        const key = 'mapel_' + day + '_' + input.id.split('_')[1];
-        input.checked = localStorage.getItem(key) === 'true';
-        input.addEventListener('change', () => {
-            localStorage.setItem(key, input.checked);
-        });
-    });
+    fetch('/progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            day,
+            tanggal: '{{ $tanggal }}',
+            refleksi: refleksiVal,
+            selesai: selesaiVal,
+            jadwal,
+            mapel
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log('Progress saved:', data))
+    .catch(err => console.error('Error saving progress:', err));
+}
 
-    // Dark Mode toggle
-    const toggleTheme = document.getElementById('toggle-theme');
-    const html = document.documentElement;
-    const savedTheme = localStorage.getItem('theme');
+// Event listener auto-simpan
+checkbox.addEventListener('change', simpanProgress);
+refleksi.addEventListener('input', simpanProgress);
+jadwalCheckboxes.forEach(cb => cb.addEventListener('change', simpanProgress));
+mapelCheckboxes.forEach(cb => cb.addEventListener('change', simpanProgress));
 
-    if (savedTheme === 'dark') {
-        html.classList.add('dark');
-    }
+// Tombol manual
+document.getElementById('save-progress').addEventListener('click', () => {
+    simpanProgress();
+    alert('Progress berhasil disimpan!');
+});
 
-    toggleTheme.addEventListener('click', () => {
-        html.classList.toggle('dark');
-        localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-    });
+// Dark mode
+const toggleTheme = document.getElementById('toggle-theme');
+const html = document.documentElement;
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') html.classList.add('dark');
+
+toggleTheme.addEventListener('click', () => {
+    html.classList.toggle('dark');
+    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    toggleTheme.textContent = html.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';
+});
 </script>
 @endsection
